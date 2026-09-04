@@ -2,7 +2,7 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Pas besoin de CUDA, ton modèle fait 12 Mo et tourne sur CPU en <50ms
+# no need for CUDA as the model size is 1,2 Mo
 RUN pip install --no-cache-dir \
     torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
