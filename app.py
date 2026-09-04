@@ -8,20 +8,27 @@ import gradio as gr
 class MNISTCNN(nn.Module):
     def __init__(self):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(1, 32, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
-            nn.Conv2d(32, 64, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
-            nn.Flatten(),
-            nn.Linear(64 * 7 * 7, 256), nn.ReLU(), nn.Dropout(0.2),
-            nn.Linear(256, 10)
-        )
+        self.conv1 = nn.Conv2d(1, 32, 3, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, 3, padding=1)
+        self.fc1 = nn.Linear(64 * 7 * 7, 128)
+        self.fc2 = nn.Linear(128, 10)
+        self.dropout = nn.Dropout(0.2)
 
     def forward(self, x):
-        return self.net(x)
+        x = torch.relu(self.conv1(x))
+        x = torch.nn.functional.max_pool2d(x, 2)
+        x = torch.relu(self.conv2(x))
+        x = torch.nn.functional.max_pool2d(x, 2)
+        x = torch.flatten(x, 1)
+        x = torch.relu(self.fc1(x))
+        x = self.dropout(x)
+        x = self.fc2(x)
+        return x
 
 # --- Load ---
 model = MNISTCNN()
-model.load_state_dict(torch.load("mnist_cnn_final.pth", map_location="cpu", weights_only=True))
+checkpoint = torch.load("mnist_cnn_final.pth", map_location="cpu", weights_only=True)
+model.load_state_dict(checkpoint["model_state_dict"])
 model.eval()
 
 transform = transforms.Compose([
@@ -45,7 +52,7 @@ demo = gr.Interface(
     fn=predict,
     inputs=gr.Image(type="numpy", label="digit image"),
     outputs=gr.Textbox(label="result"),
-    title="MNIST CNN — 12 Mo, CPU only",
+    title="MNIST CNN — 1.6 Mo, CPU only",
     description="upload a 28×28 px image (or above, we'll resize it)",
 )
 
